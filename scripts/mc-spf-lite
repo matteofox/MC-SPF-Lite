@@ -245,7 +245,7 @@ for ind in range(nobj):
     	    ax1.set_xlabel(r'$\lambda~\mathrm{obs.}~[\mu \mathrm{m}]$')
 	    ax1.set_ylabel(r'$\lambda~L_\lambda [L_\odot]$')
 	    
-	    ax4.set_xlabel(r'$\mathrm{Age~[Gyr]}$')
+	    ax4.set_xlabel(r'$\mathrm{Time~[Gyr]}$')
     	    ax4.set_ylabel(r'$SFR~\mathrm{[M_\odot~yr^{-1}]}$')
     		    
     	    #Plot Age Tau covariance plot
