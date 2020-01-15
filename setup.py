@@ -8,8 +8,13 @@ import subprocess
 
 try:
     from setuptools import setup, Extension, Command
+    from setuptools.command.build_ext import build_ext as _build_ext
+    from setuptools.command.build import build
+
 except ImportError:
     from distutils.core import setup, Extension, Command
+    from distutils.command.build_ext import build_ext as _build_ext
+    from distutils.command.build import build
 
 class CleanCommand(Command):
     """Custom distutils command to clean the .so and .pyc files."""
@@ -54,14 +59,32 @@ class CleanCommand(Command):
             except Exception:
                 pass
 
+try:
+    from Cython.Build import cythonize
+except ImportError:
+    raise ImportError("MC-SPF requires cython to install")
+
+
+class build_ext(_build_ext):
+    def build_extension(self, ext):
+        _build_ext.build_extension(self, ext)
+ 
 
 if __name__ == "__main__":
 
     include_dirs = ["include", numpy.get_include(),]
 
+    cmodules = []
+    cmodules += [Extension("mcspflite.utils.magtools", 
+                           ["mcspflite/utils/magtools.pyx"], 
+                           include_dirs=include_dirs)]
+    ext_modules = cythonize(cmodules)
+
+
     scripts = ['scripts/'+file for file in os.listdir('scripts/')]  
 
-    cmdclass = {'clean': CleanCommand} 
+    cmdclass = {'clean': CleanCommand,
+                'build_ext': build_ext}
     
     from ctypes import cdll
     
@@ -72,12 +95,11 @@ if __name__ == "__main__":
 	'cygwin' : '.dll',
     }.get(sys.platform, '.so')
 
-    
     try:
       lib = cdll.LoadLibrary(libname)
     except:
       print('ERROR:   Could not load MultiNest library')
-      print('ERROR:   You have to build it first')
+      print('ERROR:   You have to build it first and link it to your LD_LIBRARY_PATH')
       print('ERROR:   Instructions at: http://johannesbuchner.github.com/PyMultiNest/install.html')
       sys.exit(1)
     
@@ -90,9 +112,12 @@ if __name__ == "__main__":
         version= __version__,
         author="Matteo Fossati",
         author_email="matteo.fossati@durham.ac.uk",
-        cmdclass = cmdclass,
+        ext_modules = ext_modules,
+	cmdclass = cmdclass,
         scripts = scripts, 
-        packages=["mcspflite", "mcspflite.routines"],
+        packages=["mcspflite", 
+	          "mcspflite.routines", 
+		  "mcspflite.utils"],
         license="LICENSE",
         description="Monte-Carlo Stellar Population Fitter, (LITE version optimized for photometry)",
         install_requires=[

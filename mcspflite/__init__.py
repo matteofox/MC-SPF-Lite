@@ -3,6 +3,7 @@ try:
 except(ImportError):
     pass
 
+from . import utils
 from . import routines
 
-__all__ = ['routines']
+__all__ = ['utils','routines']

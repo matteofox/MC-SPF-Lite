@@ -8,11 +8,12 @@ from astropy.modeling import models,fitting
 import astropy.io.fits as fits
 from scipy.interpolate import RectBivariateSpline as rect
 from bisect import bisect_left
-from mass_utils import getmag_spec
 import readfilt
 import astropy.units as u
 import sys
 from contextlib import contextmanager
+
+from ..utils.magtools import getmag_spec
 
 warnings.filterwarnings("ignore")
 
@@ -408,7 +409,7 @@ class sps_fitter:
 
         getmag_spec(self.red_wl, np.einsum('ji,i->ij', self.bands, \
                 spec*self.red_wl), self.n_bands, tflux)
-
+        
         if not ret_flux:
             tmag = -2.5*np.log10(tflux*self.fscale) - 48.6
             if np.all(tflux) > 0:
