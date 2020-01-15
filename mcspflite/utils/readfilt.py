@@ -31,7 +31,7 @@ class Filter(object):
         self.index = index - 1
         self.name = name.lower()
         self.fullname = comment
-	self.lambdaeff = 0.
+        self.lambdaeff = 0.
 
     def __str__(self):
         return "<Filter({0})>".format(self.name)
@@ -60,13 +60,13 @@ class Filter(object):
 
     def _calc_lambda_eff(self):
         """Calculate effective wavelength of Filter, in Angstroms."""
-	
-	lam, trans = TRANS_CACHE[self.name]
-	
-	#This applies for photon counting device
-	return np.sqrt(np.trapz(lam*trans, lam)/np.trapz(trans/lam, lam))
-	 
-	
+        
+        lam, trans = TRANS_CACHE[self.name]
+        
+        #This applies for photon counting device
+        return np.sqrt(np.trapz(lam*trans, lam)/np.trapz(trans/lam, lam))
+         
+        
 
 def init_filters(path):
     """
@@ -85,16 +85,16 @@ def init_filters(path):
             if len(columns) <= 1:
                 continue
             else:
-	       fsps_id = columns[0]
-	       
-	       openbrackets = (np.array([x[0] for x in columns]) == '(')
-	       if openbrackets.sum() >0:
-	         commentcol = np.argmax(np.array([x[0] for x in columns]) == '(')
-	         key = '_'.join(columns[1:commentcol])
-		 comment = ' '.join(columns[commentcol:])
-	       else:
-	         key = '_'.join(columns[1:])
-		 comment = ' '
+               fsps_id = columns[0]
+               
+               openbrackets = (np.array([x[0] for x in columns]) == '(')
+               if openbrackets.sum() >0:
+                 commentcol = np.argmax(np.array([x[0] for x in columns]) == '(')
+                 key = '_'.join(columns[1:commentcol])
+                 comment = ' '.join(columns[commentcol:])
+               else:
+                 key = '_'.join(columns[1:])
+                 comment = ' '
                filters[key.lower()] = Filter(int(fsps_id), key, comment)
     
     """Parse the allfilters.dat file into the TRANS_CACHE."""
@@ -104,23 +104,23 @@ def init_filters(path):
     filter_index = -1
     lambdas, trans = [], []
     with open(path) as f:
-    	for line in f:
-    	    line.strip()
-    	    if line[0].startswith("#"):
-    		# Close out filter
-    		if filter_index > -1:
-    		    TRANS_CACHE[names[filter_index]] = (
-    			np.array(lambdas), np.array(trans))
-    		# Start new filter
-    		filter_index += 1
-    		lambdas, trans = [], []
-    	    else:
-    		try:
-    		    l, t = line.split()
-    		    lambdas.append(float(l))
-    		    trans.append(float(t))
-    		except(ValueError):
-    		    pass
+        for line in f:
+            line.strip()
+            if line[0].startswith("#"):
+                # Close out filter
+                if filter_index > -1:
+                    TRANS_CACHE[names[filter_index]] = (
+                        np.array(lambdas), np.array(trans))
+                # Start new filter
+                filter_index += 1
+                lambdas, trans = [], []
+            else:
+                try:
+                    l, t = line.split()
+                    lambdas.append(float(l))
+                    trans.append(float(t))
+                except(ValueError):
+                    pass
 
     
     return filters
