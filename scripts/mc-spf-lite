@@ -75,8 +75,8 @@ else:
 ffilt = np.loadtxt(args.filtfile, dtype=object) 
 fsps_filt = dict(zip(ffilt[:,0], ffilt[:,1]))
 
-print "Fitting {} objects".format(nobj)
-print "Model file {0} ".format(model_file)
+print("Fitting {} objects".format(nobj))
+print("Model file {0} ".format(model_file))
 
 for ind in range(nobj):
     
@@ -88,7 +88,7 @@ for ind in range(nobj):
     
     this_obj_z = catalogue['z_best'][catind]
     
-    print "{0}) Fitting obj {1} with z {2:5.4f} ".format(str(ind+1).rjust(4), obj, this_obj_z)
+    print("{0}) Fitting obj {1} with z {2:5.4f} ".format(str(ind+1).rjust(4), obj, this_obj_z))
 
     this_obj_flux, this_obj_err, this_obj_bands, this_obj_islim = [], [], [], []
 
@@ -128,7 +128,7 @@ for ind in range(nobj):
     this_obj_islim = np.asarray(this_obj_islim)
     this_obj_bands = np.asarray(this_obj_bands)
 
-    print "      Object detected in {} out of {} bands".format(len(this_obj_flux)-np.sum(this_obj_islim), len(this_obj_flux))
+    print("      Object detected in {} out of {} bands".format(len(this_obj_flux)-np.sum(this_obj_islim), len(this_obj_flux)))
     
     parameters = ['tau', 'age', 'Av', 'alpha', 'lmass', 'age_gas', 'ion_gas']
     ndim = len(parameters)
@@ -182,7 +182,7 @@ for ind in range(nobj):
 	    percs = np.transpose(np.percentile(values, [16,50,84], axis=0))
     	    
     	    for i in range(ndim):
-    	      print 'Best fit for parameter {0}: {1:7.3f} + {2:6.3f} - {3:6.3f}'.format(parameters[i].ljust(10), meds[i], abs(percs[i,2]-meds[i]), abs(percs[i,0]-meds[i]))
+    	      print('Best fit for parameter {0}: {1:7.3f} + {2:6.3f} - {3:6.3f}'.format(parameters[i].ljust(10), meds[i], abs(percs[i,2]-meds[i]), abs(percs[i,0]-meds[i])))
     	    
     	    #Calculate SFR
     	    nsamp = 100
@@ -195,7 +195,7 @@ for ind in range(nobj):
     	    
 	    medlsfr  = np.percentile(sfr_samp, 50)
 	    perclsfr = np.percentile(sfr_samp, [16,50,84])
-    	    print 'Best fit for parameter {0}: {1:7.3f} + {2:6.3f} - {3:6.3f} (DERIVED)'.format('lSFR'.ljust(10), medlsfr, abs(perclsfr[2]-medlsfr), abs(perclsfr[0]-medlsfr))
+    	    print('Best fit for parameter {0}: {1:7.3f} + {2:6.3f} - {3:6.3f} (DERIVED)'.format('lSFR'.ljust(10), medlsfr, abs(perclsfr[2]-medlsfr), abs(perclsfr[0]-medlsfr)))
     	    
 	    #This returns the individual fluxes and the full spectrum 
 	    mflux, mphot = temp.reconstruct_phot(meds, ndim)
@@ -218,7 +218,7 @@ for ind in range(nobj):
     	    photo_chisq = np.nansum(((oflux_lam-mflux)/oflux_err_lam)**2)
     	    photo_chisq /= len(this_obj_flux)
     	    
-    	    print 'Reduced Chi square {0:6.2f}'.format(photo_chisq)
+    	    print('Reduced Chi square {0:6.2f}'.format(photo_chisq))
 
     	    #Set number and index of random samples
 	    nsamp = 25
