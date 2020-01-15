@@ -8,12 +8,12 @@ from astropy.modeling import models,fitting
 import astropy.io.fits as fits
 from scipy.interpolate import RectBivariateSpline as rect
 from bisect import bisect_left
-import readfilt
 import astropy.units as u
 import sys
 from contextlib import contextmanager
 
 from ..utils.magtools import getmag_spec
+from ..utils.readfilt import init_filters, get_filter
 
 warnings.filterwarnings("ignore")
 
@@ -370,14 +370,14 @@ class sps_fitter:
         pivot = np.zeros(self.n_bands, dtype=float)
         
         #lookup for filter number given name
-        filters_db = readfilt.init_filters(self.filtdir)
+        filters_db = init_filters(self.filtdir)
         
         for ii, filt in enumerate(self.filters):
             
             if 'line' in filt:
              return 0,0
            
-            fobj = readfilt.get_filter(filters_db, filt)
+            fobj = get_filter(filters_db, filt)
             fwl, ftrans = fobj.transmission
             ftrans = np.maximum(ftrans, 0.)
             trans_interp = np.asarray(np.interp(self.red_wl, fwl, \
