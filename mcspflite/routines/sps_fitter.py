@@ -98,7 +98,7 @@ class sps_fitter:
         
         #first pass through extensions to get grid parameters
         ext_tau, ext_age, ext_metal = {}, {}, {}
-        for ii in xrange(1,num_ext):
+        for ii in range(1,num_ext):
             age = mfile[ii].header['AGE'] / 1e3
             tau   = mfile[ii].header['TAU'] / 1e3
             ext_tau[ii]   = np.float(tau)
@@ -137,7 +137,7 @@ class sps_fitter:
         #grid where the fractional flux from young populations is stored
         self.fym_grid = np.zeros_like(self.mod_grid)
         
-        for ii in xrange(1,num_ext):
+        for ii in range(1,num_ext):
             tau_idx = tau_id[ext_tau[ii]]
             age_idx = age_id[ext_age[ii]]
             
