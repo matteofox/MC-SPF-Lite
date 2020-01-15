@@ -91,9 +91,9 @@ class sps_fitter:
         mfile = fits.open(phot_mod_file)
         num_ext = len(mfile)
         
-        #pull wavelength information for the first spectrum
-        tdata = np.array(mfile[0].data, dtype=np.float)
-        twl = self.airtovac(tdata[:,0])
+        #pull wavelength information from the primary extension of the models
+        wdata = np.array(mfile[0].data, dtype=np.float)
+        twl = self.airtovac(wdata)
         
         #first pass through extensions to get grid parameters
         ext_tau, ext_age, ext_metal = {}, {}, {}
