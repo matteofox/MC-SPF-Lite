@@ -48,7 +48,7 @@ else:
    print("SFH not understood aborting...")
    exit()
 
-plotdir 	= rootdir+'Plots/'
+plotdir         = rootdir+'Plots/'
 fitsdir         = rootdir+'Fits/'
 
 if not os.path.isdir(fitsdir):
@@ -57,7 +57,7 @@ if not os.path.isdir(fitsdir):
 if not os.path.isdir(plotdir):
        os.makedirs(plotdir)
    
-out_fmt 	= fitsdir+'id{0}_'
+out_fmt         = fitsdir+'id{0}_'
 fit_file        = 'Fit_values.txt'
 
 #Open galaxy catalogue
@@ -101,27 +101,27 @@ for ind in range(nobj):
        #below it is converted into erg s^-1 cm^-2 Hz^-1 = 1E-26 mJy
        #----------------------------
        #Is this a flux column?
-       if col[:2].upper() == 'F_':	
-    	  #Which band is this column for?
-    	  photband = col[2:]
-    	  if photband in fsps_filt.keys():	   
-	   flux = catalogue[col][catind] 
-	   errf = catalogue[col.replace('f_','e_')][catind] 
-	   
-	   if flux < -90:
-	     continue
-	   
-	   SNR = flux/errf
-	   if SNR>2:
-	     this_obj_flux.append(flux * 1E-26)
-    	     this_obj_err.append(errf * 1E-26)
-    	     this_obj_islim.append(0)
-    	   else:
-	     this_obj_flux.append(0.)
-    	     this_obj_err.append(errf * 1E-26)
-    	     this_obj_islim.append(1)
-	   
-	   this_obj_bands.append(fsps_filt[photband])
+       if col[:2].upper() == 'F_':      
+          #Which band is this column for?
+          photband = col[2:]
+          if photband in fsps_filt.keys():         
+           flux = catalogue[col][catind] 
+           errf = catalogue[col.replace('f_','e_')][catind] 
+           
+           if flux < -90:
+             continue
+           
+           SNR = flux/errf
+           if SNR>2:
+             this_obj_flux.append(flux * 1E-26)
+             this_obj_err.append(errf * 1E-26)
+             this_obj_islim.append(0)
+           else:
+             this_obj_flux.append(0.)
+             this_obj_err.append(errf * 1E-26)
+             this_obj_islim.append(1)
+           
+           this_obj_bands.append(fsps_filt[photband])
        
     this_obj_flux  = np.asarray(this_obj_flux)
     this_obj_err   = np.asarray(this_obj_err)
@@ -132,157 +132,157 @@ for ind in range(nobj):
     
     parameters = ['tau', 'age', 'Av', 'alpha', 'lmass', 'age_gas', 'ion_gas']
     ndim = len(parameters)
-	    
+            
     #Start with no priors on all parameters
     Gpriors = np.tile('none', 2*ndim).astype(object)  
     
     if args.mode =='FIT' :
 
       with sps_fitter(this_obj_z, model_file, this_obj_flux, this_obj_err, \
-	       this_obj_bands, this_obj_islim, filtdir=modeldir+'Filters/', modeldir=modeldir+'Dust_Emi_models/', \
-    	       Gpriors=Gpriors, cosmo=cosmo) as temp:
+               this_obj_bands, this_obj_islim, filtdir=modeldir+'Filters/', modeldir=modeldir+'Dust_Emi_models/', \
+               Gpriors=Gpriors, cosmo=cosmo) as temp:
     
-	  with redir_stdout():
-	     t0 = datetime.datetime.now()
-	     pymultinest.run(temp.lnlhood, temp._scale_cube, ndim, sampling_efficiency=0.5, resume=False, \
-	   	   outputfiles_basename=out_fmt.format(obj), verbose=True, multimodal=False, \
-	   	   importance_nested_sampling=False, n_live_points=args.nlive, evidence_tolerance=0.5)
+          with redir_stdout():
+             t0 = datetime.datetime.now()
+             pymultinest.run(temp.lnlhood, temp._scale_cube, ndim, sampling_efficiency=0.5, resume=False, \
+                   outputfiles_basename=out_fmt.format(obj), verbose=True, multimodal=False, \
+                   importance_nested_sampling=False, n_live_points=args.nlive, evidence_tolerance=0.5)
              t1 = datetime.datetime.now()
-	   
+           
           #print "Runtime for multinest {}".format((t1-t0).total_seconds())
-	   
-	   
+           
+           
     elif args.mode == 'PLOT':
-    	
-    	if os.path.exists('{0}post_equal_weights.dat'.format(out_fmt.format(obj))):
+        
+        if os.path.exists('{0}post_equal_weights.dat'.format(out_fmt.format(obj))):
     
-	  with sps_fitter(this_obj_z, model_file, this_obj_flux, this_obj_err, \
-		this_obj_bands, this_obj_islim, filtdir=modeldir+'Filters/', modeldir=modeldir+'Dust_Emi_models/', \
-    		cosmo=cosmo) as temp:
-			    
-	    a = pymultinest.Analyzer(n_params=ndim, outputfiles_basename=out_fmt.format(obj))
-	    values = a.get_equal_weighted_posterior()
-    	    
-	    stat = a.get_stats()
+          with sps_fitter(this_obj_z, model_file, this_obj_flux, this_obj_err, \
+                this_obj_bands, this_obj_islim, filtdir=modeldir+'Filters/', modeldir=modeldir+'Dust_Emi_models/', \
+                cosmo=cosmo) as temp:
+                            
+            a = pymultinest.Analyzer(n_params=ndim, outputfiles_basename=out_fmt.format(obj))
+            values = a.get_equal_weighted_posterior()
+            
+            stat = a.get_stats()
 
-	    lnz, dlnz = stat['global evidence'], stat['global evidence error']
+            lnz, dlnz = stat['global evidence'], stat['global evidence error']
 
-	    fig = pl.figure(figsize=(12,3))
-	    
-    	    #Photometry plot
-    	    ax1 = fig.add_axes([0.08,0.12,0.38,0.80])
-	    ax1.set_xscale('log')
-	    ax1.set_yscale('log')
-	    
-    	    #SFH and corner plot
-    	    ax4 = fig.add_axes([0.51,0.12,0.25,0.80])
-	    ax5 = fig.add_axes([0.82,0.12,0.15,0.80])
-	      
-	    meds  = np.percentile(values, 50, axis=0)
-	    percs = np.transpose(np.percentile(values, [16,50,84], axis=0))
-    	    
-    	    for i in range(ndim):
-    	      print('Best fit for parameter {0}: {1:7.3f} + {2:6.3f} - {3:6.3f}'.format(parameters[i].ljust(10), meds[i], abs(percs[i,2]-meds[i]), abs(percs[i,0]-meds[i])))
-    	    
-    	    #Calculate SFR
-    	    nsamp = 100
-    	    sfr_samp = np.zeros(nsamp)
-    	    rsamples = np.random.randint(values.shape[0], size=nsamp)
-    	    
-    	    for aa,ii in enumerate(rsamples):
-		tsamp = values[ii,:-1]
-    		sfr_samp[aa] = np.log10(sfh.ssfr(tsamp[1], tsamp[0], sfh.expsfh)*10**(tsamp[4]),)
-    	    
-	    medlsfr  = np.percentile(sfr_samp, 50)
-	    perclsfr = np.percentile(sfr_samp, [16,50,84])
-    	    print('Best fit for parameter {0}: {1:7.3f} + {2:6.3f} - {3:6.3f} (DERIVED)'.format('lSFR'.ljust(10), medlsfr, abs(perclsfr[2]-medlsfr), abs(perclsfr[0]-medlsfr)))
-    	    
-	    #This returns the individual fluxes and the full spectrum 
-	    mflux, mphot = temp.reconstruct_phot(meds, ndim)
-	    #Best SED
-	    msed_flam = mphot*temp.fscale #erg/cm2/s/A
-	    msed_fnu  = msed_flam*temp.red_wl**2/temp.clight*1E26 #output in mJy
-	    
-	    col1 = fits.Column(name='wave_obs' , format='E', unit='Angstrom_vac', array=temp.red_wl)
-	    col2 = fits.Column(name='wave_rest', format='E', unit='Angstrom_vac', array=temp.red_wl/(1+this_obj_z))
-	    col3 = fits.Column(name='f_nu',  format='E', unit='mJy',              array=msed_fnu)
-	    col4 = fits.Column(name='f_lam', format='E', unit='erg/cm2/s/A',      array=msed_flam)
-	    
-	    hdu = fits.BinTableHDU.from_columns([col1, col2, col3, col4])
-	    hdu.writeto(plotdir+'id{0}_best_sed.fits'.format(obj), overwrite=True)
+            fig = pl.figure(figsize=(12,3))
+            
+            #Photometry plot
+            ax1 = fig.add_axes([0.08,0.12,0.38,0.80])
+            ax1.set_xscale('log')
+            ax1.set_yscale('log')
+            
+            #SFH and corner plot
+            ax4 = fig.add_axes([0.51,0.12,0.25,0.80])
+            ax5 = fig.add_axes([0.82,0.12,0.15,0.80])
+              
+            meds  = np.percentile(values, 50, axis=0)
+            percs = np.transpose(np.percentile(values, [16,50,84], axis=0))
+            
+            for i in range(ndim):
+              print('Best fit for parameter {0}: {1:7.3f} + {2:6.3f} - {3:6.3f}'.format(parameters[i].ljust(10), meds[i], abs(percs[i,2]-meds[i]), abs(percs[i,0]-meds[i])))
+            
+            #Calculate SFR
+            nsamp = 100
+            sfr_samp = np.zeros(nsamp)
+            rsamples = np.random.randint(values.shape[0], size=nsamp)
+            
+            for aa,ii in enumerate(rsamples):
+                tsamp = values[ii,:-1]
+                sfr_samp[aa] = np.log10(sfh.ssfr(tsamp[1], tsamp[0], sfh.expsfh)*10**(tsamp[4]),)
+            
+            medlsfr  = np.percentile(sfr_samp, 50)
+            perclsfr = np.percentile(sfr_samp, [16,50,84])
+            print('Best fit for parameter {0}: {1:7.3f} + {2:6.3f} - {3:6.3f} (DERIVED)'.format('lSFR'.ljust(10), medlsfr, abs(perclsfr[2]-medlsfr), abs(perclsfr[0]-medlsfr)))
+            
+            #This returns the individual fluxes and the full spectrum 
+            mflux, mphot = temp.reconstruct_phot(meds, ndim)
+            #Best SED
+            msed_flam = mphot*temp.fscale #erg/cm2/s/A
+            msed_fnu  = msed_flam*temp.red_wl**2/temp.clight*1E26 #output in mJy
+            
+            col1 = fits.Column(name='wave_obs' , format='E', unit='Angstrom_vac', array=temp.red_wl)
+            col2 = fits.Column(name='wave_rest', format='E', unit='Angstrom_vac', array=temp.red_wl/(1+this_obj_z))
+            col3 = fits.Column(name='f_nu',  format='E', unit='mJy',              array=msed_fnu)
+            col4 = fits.Column(name='f_lam', format='E', unit='erg/cm2/s/A',      array=msed_flam)
+            
+            hdu = fits.BinTableHDU.from_columns([col1, col2, col3, col4])
+            hdu.writeto(plotdir+'id{0}_best_sed.fits'.format(obj), overwrite=True)
 
-	    #Compute photometric chisquare
-    	    oflux_lam = this_obj_flux* temp.clight/temp.pivot_wl**2
-    	    oflux_err_lam = this_obj_err* temp.clight/temp.pivot_wl**2
-    			    
-    	    photo_chisq = np.nansum(((oflux_lam-mflux)/oflux_err_lam)**2)
-    	    photo_chisq /= len(this_obj_flux)
-    	    
-    	    print('Reduced Chi square {0:6.2f}'.format(photo_chisq))
+            #Compute photometric chisquare
+            oflux_lam = this_obj_flux* temp.clight/temp.pivot_wl**2
+            oflux_err_lam = this_obj_err* temp.clight/temp.pivot_wl**2
+                            
+            photo_chisq = np.nansum(((oflux_lam-mflux)/oflux_err_lam)**2)
+            photo_chisq /= len(this_obj_flux)
+            
+            print('Reduced Chi square {0:6.2f}'.format(photo_chisq))
 
-    	    #Set number and index of random samples
-	    nsamp = 25
-	    rsamples = np.random.randint(values.shape[0], size=nsamp)
-    			    
-    	    for ii in rsamples:
-		tsamp = values[ii,:-1]
-		tflux, tphot = temp.reconstruct_phot(tsamp, ndim)
-    		
-		ax1.plot(temp.red_wl/1e4, tphot*temp.fscale*temp.red_wl*temp.lum_corr/temp.lsun, color='firebrick', alpha=0.15, lw=0.7, rasterized=False)
-		ax1.plot(temp.red_wl/1e4, temp.dusty_phot_young*10**tsamp[4]*temp.fscale*temp.red_wl*temp.lum_corr/temp.lsun, color='blue', alpha=0.15, lw=0.7, rasterized=False)
-    		ax1.plot(temp.red_wl/1e4, temp.dusty_phot_old*  10**tsamp[4]*temp.fscale*temp.red_wl*temp.lum_corr/temp.lsun, color='red' , alpha=0.15, lw=0.7, rasterized=False)
-    		
-    		#Make this array in Myr
-    		age_array = np.arange(int(tsamp[1]*1000))/1000.
-    		ax4.plot(age_array, sfh.expsfh(age_array,tsamp[0])*10**(tsamp[4]),color='black', alpha=0.1, lw=0.6, rasterized=False)
-    				
-	    
-    	    #Datapoints on photometry
-    	    ax1.errorbar(temp.pivot_wl/1e4, temp.flux_obs*temp.pivot_wl*temp.lum_corr/temp.lsun, yerr=temp.eflux_obs*temp.pivot_wl*temp.lum_corr/temp.lsun, fmt='none', capsize=3, zorder=30, ecolor='black')
-	    ax1.plot(temp.pivot_wl/1e4, temp.flux_obs*temp.pivot_wl*temp.lum_corr/temp.lsun, 'ko', ms=6.0)
-	  
-	    ax1.axis([2.5e-1,5e1,1e7,5e11])
-    	    ax1.set_xlabel(r'$\lambda~\mathrm{obs.}~[\mu \mathrm{m}]$')
-	    ax1.set_ylabel(r'$\lambda~L_\lambda [L_\odot]$')
-	    
-	    ax4.set_xlabel(r'$\mathrm{Time~[Gyr]}$')
-    	    ax4.set_ylabel(r'$SFR~\mathrm{[M_\odot~yr^{-1}]}$')
-    		    
-    	    #Plot Age Tau covariance plot
-    	    triangle.hist2d(values[:,1], values[:,0], ax=ax5)
-    	    ax5.axvline(meds[1], color='firebrick', lw=1)
-    	    ax5.axhline(meds[0], color='firebrick', lw=1)
-    	    ax5.set_xlabel(r'$\mathrm{Age~[Gyr]}$')
-    	    ax5.set_ylabel(r'$\tau$ [Gyr]')
-    	    
-    	    pl.savefig(plotdir+'id{0}_fit_summary.pdf'.format(obj), bbox_inches='tight')
-    	    
-	    #Now deal with the fit file
-    	    regstr = '{}'.format((str(obj)).ljust(7))
-    	    for i in range(ndim): 
-    	       regstr += '{:7.3f} {:7.3f} {:7.3f} '.format(percs[i,0], percs[i,1], percs[i,2])
-    	    regstr += '{:7.3f} {:7.3f} {:7.3f} {:7.3f} {:7.3f}'.format(medlsfr, perclsfr[1], perclsfr[2], lnz, photo_chisq)
+            #Set number and index of random samples
+            nsamp = 25
+            rsamples = np.random.randint(values.shape[0], size=nsamp)
+                            
+            for ii in rsamples:
+                tsamp = values[ii,:-1]
+                tflux, tphot = temp.reconstruct_phot(tsamp, ndim)
+                
+                ax1.plot(temp.red_wl/1e4, tphot*temp.fscale*temp.red_wl*temp.lum_corr/temp.lsun, color='firebrick', alpha=0.15, lw=0.7, rasterized=False)
+                ax1.plot(temp.red_wl/1e4, temp.dusty_phot_young*10**tsamp[4]*temp.fscale*temp.red_wl*temp.lum_corr/temp.lsun, color='blue', alpha=0.15, lw=0.7, rasterized=False)
+                ax1.plot(temp.red_wl/1e4, temp.dusty_phot_old*  10**tsamp[4]*temp.fscale*temp.red_wl*temp.lum_corr/temp.lsun, color='red' , alpha=0.15, lw=0.7, rasterized=False)
+                
+                #Make this array in Myr
+                age_array = np.arange(int(tsamp[1]*1000))/1000.
+                ax4.plot(age_array, sfh.expsfh(age_array,tsamp[0])*10**(tsamp[4]),color='black', alpha=0.1, lw=0.6, rasterized=False)
+                                
+            
+            #Datapoints on photometry
+            ax1.errorbar(temp.pivot_wl/1e4, temp.flux_obs*temp.pivot_wl*temp.lum_corr/temp.lsun, yerr=temp.eflux_obs*temp.pivot_wl*temp.lum_corr/temp.lsun, fmt='none', capsize=3, zorder=30, ecolor='black')
+            ax1.plot(temp.pivot_wl/1e4, temp.flux_obs*temp.pivot_wl*temp.lum_corr/temp.lsun, 'ko', ms=6.0)
+          
+            ax1.axis([2.5e-1,5e1,1e7,5e11])
+            ax1.set_xlabel(r'$\lambda~\mathrm{obs.}~[\mu \mathrm{m}]$')
+            ax1.set_ylabel(r'$\lambda~L_\lambda [L_\odot]$')
+            
+            ax4.set_xlabel(r'$\mathrm{Time~[Gyr]}$')
+            ax4.set_ylabel(r'$SFR~\mathrm{[M_\odot~yr^{-1}]}$')
+                    
+            #Plot Age Tau covariance plot
+            triangle.hist2d(values[:,1], values[:,0], ax=ax5)
+            ax5.axvline(meds[1], color='firebrick', lw=1)
+            ax5.axhline(meds[0], color='firebrick', lw=1)
+            ax5.set_xlabel(r'$\mathrm{Age~[Gyr]}$')
+            ax5.set_ylabel(r'$\tau$ [Gyr]')
+            
+            pl.savefig(plotdir+'id{0}_fit_summary.pdf'.format(obj), bbox_inches='tight')
+            
+            #Now deal with the fit file
+            regstr = '{}'.format((str(obj)).ljust(7))
+            for i in range(ndim): 
+               regstr += '{:7.3f} {:7.3f} {:7.3f} '.format(percs[i,0], percs[i,1], percs[i,2])
+            regstr += '{:7.3f} {:7.3f} {:7.3f} {:7.3f} {:7.3f}'.format(medlsfr, perclsfr[1], perclsfr[2], lnz, photo_chisq)
 
-    	    
-    	    if os.path.isfile(plotdir+fit_file):
-	       with open(plotdir+fit_file) as fitfile:
-    		 lines = fitfile.readlines()
-    	       start = [line[:3] for line in lines]
-    	       try:
-    		 pos = start.index(str(obj).ljust(3))
-		 lines[pos] = regstr+'\n'
-    	       except ValueError:
-    		 lines.append(regstr+'\n')
-    	       with open(plotdir+fit_file, 'w') as fitfile:   
-    		  fitfile.writelines(sorted(lines))
-    		 
-    	    else:
-    	       header = '#ID '
-    	       for i in range(ndim):
-    		 header += '{}_16 {}_50 {}_84 '.format(parameters[i].upper(), parameters[i].upper(),parameters[i].upper())
-    	       header += 'LSFR_16 LSFR_50 LSFR_84 LNZ CHI2_PHOT'
-    		 
-    	       with open(plotdir+fit_file,"w") as fitfile:
-    		 fitfile.write(header+'\n')
-    		 fitfile.write(regstr+'\n')
+            
+            if os.path.isfile(plotdir+fit_file):
+               with open(plotdir+fit_file) as fitfile:
+                 lines = fitfile.readlines()
+               start = [line[:3] for line in lines]
+               try:
+                 pos = start.index(str(obj).ljust(3))
+                 lines[pos] = regstr+'\n'
+               except ValueError:
+                 lines.append(regstr+'\n')
+               with open(plotdir+fit_file, 'w') as fitfile:   
+                  fitfile.writelines(sorted(lines))
+                 
+            else:
+               header = '#ID '
+               for i in range(ndim):
+                 header += '{}_16 {}_50 {}_84 '.format(parameters[i].upper(), parameters[i].upper(),parameters[i].upper())
+               header += 'LSFR_16 LSFR_50 LSFR_84 LNZ CHI2_PHOT'
+                 
+               with open(plotdir+fit_file,"w") as fitfile:
+                 fitfile.write(header+'\n')
+                 fitfile.write(regstr+'\n')
 
