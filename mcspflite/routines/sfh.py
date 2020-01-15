@@ -14,7 +14,7 @@ def expsfh(time, tau):
           _time *= 1000
     except:
        if _time<14:
-          _time *= 1000	  
+          _time *= 1000   
     
     #Time must be in steps of 1 Myr
     #sfh = _time*np.exp(-_time/_tau)/_tau**2
@@ -31,7 +31,7 @@ def ssfr(time, tau, sfh):
        _tau *= 1000
     
     if _time<14:
-       _time *= 1000	  
+       _time *= 1000      
     
     timearr = np.arange(int(_time))
     sfharr  = sfh(timearr, tau)

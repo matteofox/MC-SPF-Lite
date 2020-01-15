@@ -52,19 +52,19 @@ class sps_fitter:
     def __init__(self, redshift, phot_mod_file, flux_obs, eflux_obs, filter_list, lim_obs, \
             fesc=0., Gpriors=None, modeldir='./', filtdir='./', dl=None, cosmo=None):
         
-	""" Class for dealing with MultiNest fitting """
-		
-	if cosmo is None:
-	   from astropy.cosmology import FlatLambdaCDM
-	   cosmo = FlatLambdaCDM(H0=70,Om0=0.3)
-	
+        """ Class for dealing with MultiNest fitting """
+                
+        if cosmo is None:
+           from astropy.cosmology import FlatLambdaCDM
+           cosmo = FlatLambdaCDM(H0=70,Om0=0.3)
+        
        #input information of the galaxy to be fitted
         self.redshift = redshift
         self.Gpriors = Gpriors
-	self.modeldir = modeldir
-	self.filtdir = filtdir
+        self.modeldir = modeldir
+        self.filtdir = filtdir
         
-	#constants
+        #constants
         self.small_num = 1e-70
         self.lsun = 3.839e33 #erg/s
         self.pc2cm = 3.08568e18 #pc to cm
@@ -74,31 +74,31 @@ class sps_fitter:
         self.angstrom_to_km = u.angstrom.to(u.km)
         
         #Derive luminosity distance in Mpc
-	if dl is None:
-	   dl = cosmo.luminosity_distance(redshift).value
-	
+        if dl is None:
+           dl = cosmo.luminosity_distance(redshift).value
+        
         self.mag2cgs = np.log10(self.lsun/4.0/np.pi/(self.pc2cm*self.pc2cm)/100.)
         self.dist = 4.0*np.pi*(self.pc2cm*self.pc2cm)*100.
         self.lum_corr = (self.Mpc_to_cm*dl)**2*4.*np.pi #4pi*dl^2 in cm^2
- 	
+        
         #some derived parameters
         self.gal_age = cosmo.age(self.redshift).value
         self.dm = 5.*np.log10(dl*1e5) #DM brings source at 10pc
-	self.fscale = 10**(-0.4*self.dm)
+        self.fscale = 10**(-0.4*self.dm)
 
         ## read in the pre-computed SPS grid
         
-	mfile = fits.open(phot_mod_file)
+        mfile = fits.open(phot_mod_file)
         num_ext = len(mfile)
         
-	#pull wavelength information for the first spectrum
+        #pull wavelength information for the first spectrum
         tdata = np.array(mfile[0].data, dtype=np.float)
         twl = self.airtovac(tdata[:,0])
         
         #first pass through extensions to get grid parameters
         ext_tau, ext_age, ext_metal = {}, {}, {}
         for ii in xrange(1,num_ext):
-	    age = mfile[ii].header['AGE'] / 1e3
+            age = mfile[ii].header['AGE'] / 1e3
             tau   = mfile[ii].header['TAU'] / 1e3
             ext_tau[ii]   = np.float(tau)
             ext_age[ii]   = np.float(age)
@@ -132,16 +132,16 @@ class sps_fitter:
         
         #output grid
         self.mod_grid = np.zeros((self.n_tau, self.n_age, self.n_wl), dtype=np.float)
-	
-	#grid where the fractional flux from young populations is stored
-	self.fym_grid = np.zeros_like(self.mod_grid)
         
-	for ii in xrange(1,num_ext):
+        #grid where the fractional flux from young populations is stored
+        self.fym_grid = np.zeros_like(self.mod_grid)
+        
+        for ii in xrange(1,num_ext):
             tau_idx = tau_id[ext_tau[ii]]
             age_idx = age_id[ext_age[ii]]
-	    
-	    mdata = np.array(mfile[ii].data,  dtype=np.float)
-	    mmass = mfile[ii].header['MSTAR']
+            
+            mdata = np.array(mfile[ii].data,  dtype=np.float)
+            mmass = mfile[ii].header['MSTAR']
             metal = mfile[ii].header['METAL']
             
             self.mod_grid[tau_idx, age_idx, :] = np.interp(self.wl, twl, mdata[:, 0]/mmass, left=0, right=0)
@@ -154,20 +154,20 @@ class sps_fitter:
         self.sps_res_val[(self.wl >= 3200) & (self.wl <= 9500)] = 3.
         
         self.mod_grid[~np.isfinite(self.mod_grid)] = 0.
-	self.fym_grid[~np.isfinite(self.fym_grid)] = 0.
+        self.fym_grid[~np.isfinite(self.fym_grid)] = 0.
 
         #pre-compute attenuation curve
         self.k_cal = self._make_dusty(self.wl)
-	
+        
         #redshift the grid to be used in deriving predicted fluxes, also apply
-	#flux correction to conserve energy
+        #flux correction to conserve energy
         self._redshift_spec()
 
         #set up for nebular emission lines
         self.emm_scales = np.zeros((7,10,128), dtype=np.float)
         self.emm_wls    = np.zeros(128,        dtype=np.float)
         self.emm_ages   = np.zeros(10,         dtype=np.float)
-	self.emm_ions    = np.zeros(7,         dtype=np.float)
+        self.emm_ions    = np.zeros(7,         dtype=np.float)
         icnt = 0
         rline = 0
         iline = 0
@@ -181,21 +181,21 @@ class sps_fitter:
                     else:
                         if rline: #Read line fluxes
                             self.emm_scales[icnt%7,icnt/7,:] = np.array(map(float, temp))
-			    icnt += 1
+                            icnt += 1
                         if len(temp) == 3 and float(temp[0]) == 0.0:
                             rline = 1
                             self.emm_ages[icnt/7] = float(temp[1])/1e6
-			    self.emm_ions[icnt%7]  = float(temp[2])
+                            self.emm_ions[icnt%7]  = float(temp[2])
                         else:
                             rline = 0
         
         thb = (self.emm_wls > 4860) & (self.emm_wls < 4864)
         tha = (self.emm_wls > 6560) & (self.emm_wls < 6565)
-	self.emm_scales = np.copy(self.emm_scales) / self.emm_scales[:,:,thb]
-	
+        self.emm_scales = np.copy(self.emm_scales) / self.emm_scales[:,:,thb]
+        
         mscale     = np.max(self.emm_scales, axis=(0,1))
         keep_scale = (mscale > 0.025) & (self.emm_wls<1E5)
-        	
+                
         self.emm_scales = self.emm_scales[:,:,keep_scale]
         self.emm_wls    = self.emm_wls[keep_scale]
         
@@ -206,12 +206,12 @@ class sps_fitter:
       
         self.emm_lines_all = np.zeros((len(self.emm_ions), len(self.emm_ages), len(self.wl)), dtype=np.float)
         for jj in range(len(self.emm_ions)):
-	  for ii in range(len(self.emm_ages)):
+          for ii in range(len(self.emm_ages)):
             this_scale = self.emm_scales[jj,ii,:]
             self.emm_lines_all[jj,ii,:] = np.sum(this_scale[:,None]*\
                     np.diff(0.5*(1.+erf((self.wl_edges[None,:]-self.emm_wls[:,None])/\
                     np.sqrt(2.*self.res_lines**2)[:,None])), axis=1)/np.diff(self.wl_edges), axis=0)
-        	
+                
         #### LOAD DUST EMISSION TABLES ####
         #first fetch alpha values
         self.dh_alpha = np.loadtxt(modeldir+'alpha_DH02.dat', usecols=(0,))
@@ -226,14 +226,14 @@ class sps_fitter:
         norm = np.trapz(self.dh_dustemm, self.wl)
         self.dh_dustemm /= norm[:,None]
         
-	#### LOAD DUST EMISSION TABLES ####        
-        	
-	self.filters = filter_list #should already correspond to FSPS names
+        #### LOAD DUST EMISSION TABLES ####        
+                
+        self.filters = filter_list #should already correspond to FSPS names
         self.n_bands = len(self.filters)
         self.bands, self.pivot_wl = self._get_filters()
         
-	#photometric measurements (convert from fnu to flambda)
-	#Input at this stage is in erg/cm^2/s/Hz output in erg/cm2/s/A
+        #photometric measurements (convert from fnu to flambda)
+        #Input at this stage is in erg/cm^2/s/Hz output in erg/cm2/s/A
         self.flux_obs = flux_obs * self.clight/self.pivot_wl**2
         self.eflux_obs = eflux_obs * self.clight/self.pivot_wl**2
         self.lim_obs = lim_obs
@@ -241,16 +241,16 @@ class sps_fitter:
         #set up parameter limits
         self.tau_lims = np.array((self.grid_tau.min(), self.grid_tau.max()))
         self.age_lims = np.array((self.grid_age.min(), self.gal_age)) #self.grid_age.max()))
-	self.av_lims = np.array((0., 4.))
+        self.av_lims = np.array((0., 4.))
         self.alpha_lims = np.array((self.dh_alpha[0], self.dh_alpha[-1]))
         self.mass_lims = np.array((7,12))
         self.emmage_lims = np.array((self.emm_ages.min(), 10))
-	self.emmion_lims = np.array((self.emm_ions.min(), self.emm_ions.max()))
+        self.emmion_lims = np.array((self.emm_ions.min(), self.emm_ions.max()))
 
         self.bounds = [self.tau_lims, self.age_lims, self.av_lims, \
                 self.alpha_lims, self.mass_lims, self.emmage_lims, self.emmion_lims]
-		
-	self.ndims = len(self.bounds) 	
+                
+        self.ndims = len(self.bounds)   
 
     def vactoair(self, linLam):
         """Convert vacuum wavelengths to air wavelengths using the conversion
@@ -269,10 +269,10 @@ class sps_fitter:
         """
         sigma2 = np.asarray(1E4/linLam, dtype=float)**2
         
-	fact = 1. + 6.4328e-5 + 2.949281e-2/(146.-sigma2) + 2.5540e-4/(41.-sigma2)
-	fact[linLam < 2000] = 1.0
-	
-	return linLam*fact
+        fact = 1. + 6.4328e-5 + 2.949281e-2/(146.-sigma2) + 2.5540e-4/(41.-sigma2)
+        fact[linLam < 2000] = 1.0
+        
+        return linLam*fact
     
     def _scale_cube(self, cube, ndims, nparams):
         for ii in range(ndims):
@@ -283,7 +283,7 @@ class sps_fitter:
 
     def _make_dusty(self, wl):
         
-	#compute attenuation assuming Calzetti+ 2000 law
+        #compute attenuation assuming Calzetti+ 2000 law
         #single component 
         n_wl = len(wl)
         R = 4.05
@@ -293,7 +293,7 @@ class sps_fitter:
         k_cal[div:] = 2.659*( -1.857 + 1.04*(1e4/wl[div:])) + R
         k_cal[:div] = 2.659*(-2.156 + 1.509*(1e4/wl[:div]) - 0.198*(1e4/wl[:div])**2 + 0.011*(1e4/wl[:div])**3) + R
         
-	zero = bisect_left(-k_cal, 0.)
+        zero = bisect_left(-k_cal, 0.)
         k_cal[zero:] = 0.
 
         #2175A bump
@@ -301,19 +301,19 @@ class sps_fitter:
         k_bump = np.zeros(n_wl, dtype=float)
         #k_bump[:] = eb*(wl*350)**2 / ((wl**2 - 2175.**2)**2 + (wl*350)**2)
         
-	#k_tot is the total selective attenuation A(lam)/E(B-V).
-	#For calzetti R(V) = A(V)/E(B-V)
-	k_tot = k_cal + k_bump 
-		
-	#Return 0.4*A(lam)/A(V)
+        #k_tot is the total selective attenuation A(lam)/E(B-V).
+        #For calzetti R(V) = A(V)/E(B-V)
+        k_tot = k_cal + k_bump 
+                
+        #Return 0.4*A(lam)/A(V)
         return 0.4*(k_cal+ k_bump)/R
 
     def _redshift_spec(self):
         self.red_wl       = self.wl * (1.+self.redshift)
-	if self.redshift>0:
-	   self.red_mod_grid = self.mod_grid / (1+self.redshift)  
+        if self.redshift>0:
+           self.red_mod_grid = self.mod_grid / (1+self.redshift)  
         else:
-	   self.red_mod_grid = np.copy(self.mod_grid)
+           self.red_mod_grid = np.copy(self.mod_grid)
  
     def _tri_interp(self, data_cube, value1, value2, value3, array1, array2, array3):
         #locate vertices
@@ -370,13 +370,13 @@ class sps_fitter:
         
         #lookup for filter number given name
         filters_db = readfilt.init_filters(self.filtdir)
-	
+        
         for ii, filt in enumerate(self.filters):
             
-	    if 'line' in filt:
-	     return 0,0
-	   
-	    fobj = readfilt.get_filter(filters_db, filt)
+            if 'line' in filt:
+             return 0,0
+           
+            fobj = readfilt.get_filter(filters_db, filt)
             fwl, ftrans = fobj.transmission
             ftrans = np.maximum(ftrans, 0.)
             trans_interp = np.asarray(np.interp(self.red_wl, fwl, \
@@ -388,21 +388,21 @@ class sps_fitter:
             ntrans = np.maximum(trans_interp / ttrans, 0.0)
             
             if 'mips' in filt:
-		td = np.trapz(((fobj.lambda_eff/self.red_wl)**(2.))*ntrans*self.red_wl, self.red_wl)
+                td = np.trapz(((fobj.lambda_eff/self.red_wl)**(2.))*ntrans*self.red_wl, self.red_wl)
                 ntrans = ntrans/max(1e-70,td)
 
             if 'irac' in filt or 'pacs' in filt or 'spire' in filt or 'iras' in filt: 
-		td = np.trapz(((fobj.lambda_eff/self.red_wl)**(1.))*ntrans*self.red_wl, self.red_wl)
+                td = np.trapz(((fobj.lambda_eff/self.red_wl)**(1.))*ntrans*self.red_wl, self.red_wl)
                 ntrans = ntrans/max(1e-70,td)
 
             bands[ii,:] = ntrans
             pivot[ii] = fobj.lambda_eff
         
-	return bands, pivot
+        return bands, pivot
 
     def _get_mag_single(self, spec, ret_flux=True):
         
-	#compute observed frame magnitudes and fluxes, return both
+        #compute observed frame magnitudes and fluxes, return both
         
         tflux = np.zeros(self.n_bands, dtype=np.float)
 
@@ -417,7 +417,7 @@ class sps_fitter:
                 tmag[flux <= 0] = -99.
                 return tmag
         
-	#Return fluxes in erg/s/cm^2/A
+        #Return fluxes in erg/s/cm^2/A
         if np.all(tflux) > 0:        
             return tflux*self.fscale
         else:
@@ -428,64 +428,64 @@ class sps_fitter:
     def lnprior(self, p, ndim):
         if all(b[0] <= v <= b[1] for v, b in zip(p, self.bounds)):
             
-	    pav = 0
-	    
-	    if self.Gpriors is not None:
-	      for par in range(ndim):
-	        if self.Gpriors[2*par] != 'none' and self.Gpriors[(2*par)+1] != 'none':
-		  val = float(self.Gpriors[2*par])
-		  sig = float(self.Gpriors[(2*par)+1])
+            pav = 0
+            
+            if self.Gpriors is not None:
+              for par in range(ndim):
+                if self.Gpriors[2*par] != 'none' and self.Gpriors[(2*par)+1] != 'none':
+                  val = float(self.Gpriors[2*par])
+                  sig = float(self.Gpriors[(2*par)+1])
                   pav  +=  -0.5*(((p[par]-val)/sig)**2 + np.log(2.*np.pi*sig**2))
-		  	    
-	    return pav
+                            
+            return pav
 
         return -np.inf
 
     def lnlhood(self, p, ndim, nparams):
         
            
-	model_phot, _ = self.reconstruct_phot(p, ndim)
+        model_phot, _ = self.reconstruct_phot(p, ndim)
          
-	if np.all(model_phot == 0.):
+        if np.all(model_phot == 0.):
            return -np.inf
 
         iphot2 = 1./(self.eflux_obs**2)
          
-	if np.sum(self.lim_obs):
+        if np.sum(self.lim_obs):
              terf = 0.5*(1.+erf((self.eflux_obs-model_phot)/np.sqrt(2.)/self.eflux_obs))[self.lim_obs == 1]
              if np.any(terf == 0):
-        	 return -np.inf
+                 return -np.inf
              else:
-        	 phot_lhood = np.nansum(-0.5*((iphot2*(self.flux_obs-model_phot)**2)[self.lim_obs == 0] - \
-        		 np.log(iphot2[self.lim_obs == 0]) + np.log(2.*np.pi))) + \
-        		 np.nansum(np.log(terf))
+                 phot_lhood = np.nansum(-0.5*((iphot2*(self.flux_obs-model_phot)**2)[self.lim_obs == 0] - \
+                         np.log(iphot2[self.lim_obs == 0]) + np.log(2.*np.pi))) + \
+                         np.nansum(np.log(terf))
         else:
              phot_lhood = np.nansum(-0.5*((iphot2*(self.flux_obs-model_phot)**2) - \
-        	     np.log(iphot2) + np.log(2.*np.pi)))
-	
-	#### APPLY THE PRIOR HERE  #####
-	pr = self.lnprior(p, ndim)
+                     np.log(iphot2) + np.log(2.*np.pi)))
         
-	if not np.isfinite(pr):
+        #### APPLY THE PRIOR HERE  #####
+        pr = self.lnprior(p, ndim)
+        
+        if not np.isfinite(pr):
             return -np.inf
-	
+        
         return phot_lhood + pr
 
-	
+        
     def _get_clyman(self, spec): #compute number of Lyman continuum photons
         lycont_spec = np.interp(self.lycont_wls, self.wl, spec) #spectrum in erg/s/A
         nlyman = np.trapz(lycont_spec*self.lycont_wls, self.lycont_wls)/self.h/self.clight
  
- 	#modify input spectrum to remove photons 
+        #modify input spectrum to remove photons 
         spec[:self.ilyman] *= self.fesc
     
         return nlyman*(1.-self.fesc), spec
       
     def _get_nebular(self, emm_spec, lyscale, index): 
         
-	emm_young = self.clyman_young[index] * 4.796e-13 * emm_spec * lyscale #conversion is from QH0 to Hbeta luminosity
+        emm_young = self.clyman_young[index] * 4.796e-13 * emm_spec * lyscale #conversion is from QH0 to Hbeta luminosity
         emm_old   = self.clyman_old[index]   * 4.796e-13 * emm_spec * lyscale
-        	
+                
         return emm_young, emm_old
 
     def _make_spec_emm(self, vel, sigma, emm_age, emm_ion):
@@ -493,8 +493,8 @@ class sps_fitter:
         sigma_pix = sigma/self.kms2pix
 
         temp_emm_scales = self._bi_interp(self.log_emm_scales, emm_ion, emm_age, self.emm_ions, self.emm_ages) 
-      	        
-	emm_grid = np.sum(temp_emm_scales[:,None]*\
+                
+        emm_grid = np.sum(temp_emm_scales[:,None]*\
                 np.diff(0.5*(1.+erf((self.diff_pix-vel_pix-self.vsys_pix)/np.sqrt(2.)/sigma_pix)), axis=1)/\
                 np.diff(10**self.log_model_wl_edges)[None,:], axis=0)
 
@@ -518,11 +518,11 @@ class sps_fitter:
 
         emm_young, emm_old = self._get_nebular(iemm_lines, 1, 0)
 
-	#attenuate photometry spectrum, then compute fluxes given input bands
-	self.dusty_phot_young = (10**(-(2.27*iav)*self.k_cal) * (temp_young + emm_young))
-	self.dusty_phot_old   = (10**(-iav*self.k_cal) * (temp_old+emm_old))
-	self.dusty_phot       = self.dusty_phot_young + self.dusty_phot_old
-	
+        #attenuate photometry spectrum, then compute fluxes given input bands
+        self.dusty_phot_young = (10**(-(2.27*iav)*self.k_cal) * (temp_young + emm_young))
+        self.dusty_phot_old   = (10**(-iav*self.k_cal) * (temp_old+emm_old))
+        self.dusty_phot       = self.dusty_phot_young + self.dusty_phot_old
+        
         #### THERMAL DUST EMISSION ####
         lbol_init = np.trapz(temp_young+temp_old+emm_young+emm_old, self.wl)
         lbol_att = np.trapz(self.dusty_phot, self.wl)
@@ -544,7 +544,7 @@ class sps_fitter:
         icnt = 0.
         lboln, lbolo = 0, 1e5
         
-	while (lbolo-lboln) > 1e-15 and icnt < 5:
+        while (lbolo-lboln) > 1e-15 and icnt < 5:
             idust_phot = np.copy(dust_phot)
             dust_phot = dust_phot * 10**(-iav*self.k_cal)
 
@@ -573,7 +573,7 @@ class sps_fitter:
 
     def __enter__(self):
         return self
-	
+        
     def __exit__(self, type, value, trace):
         gc.collect()
 
