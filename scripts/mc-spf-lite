@@ -23,11 +23,12 @@ cosmo=FlatLambdaCDM(H0=70,Om0=0.3)
 parser = argparse.ArgumentParser(description='MonteCarlo Stellar Population Fitting Code Lite')
 parser.add_argument('incat',    help='Path of the input catalogue')
 parser.add_argument('filtfile', help='Path of the filter translation file')
-parser.add_argument('mode',  help='Please select the run mode: FIT or PLOT')
-parser.add_argument('--objlist', default= None, help='String with the IDs of the objects to fit separated by a space')
-parser.add_argument('--nlive',   default= 450, help='Number of live points in the Multinest solver, default=450')
+parser.add_argument('mode',     help='Please select the run mode: FIT or PLOT')
+parser.add_argument('--objlist', default= None,  help='String with the IDs of the objects to fit separated by a space')
+parser.add_argument('--nlive',   default= 450,   help='Number of live points in the Multinest solver, default=450')
 parser.add_argument('--sfh',     default= 'exp', help='The form of the SFH, allowed values are exp for exponential and del for delayed tau models , default=exp')
-parser.add_argument('--outdir',  default= './', help='Full path for the output directory. Default is cwd.')
+parser.add_argument('--outdir',  default= './',  help='Full path for the output directory. Default is cwd.')
+parser.add_argument('--fullout', dest='fullout', action = 'store_true', help='If set, the full MultiNest output is saved. Uses more disk space.')
 
 args = parser.parse_args()
 
@@ -76,7 +77,7 @@ ffilt = np.loadtxt(args.filtfile, dtype=object)
 fsps_filt = dict(zip(ffilt[:,0], ffilt[:,1]))
 
 print("Fitting {} objects".format(nobj))
-print("Model file {0} ".format(model_file))
+print("Model file {0} ".format(os.path.basename(model_file)))
 
 for ind in range(nobj):
     
@@ -149,7 +150,21 @@ for ind in range(nobj):
                    importance_nested_sampling=False, n_live_points=args.nlive, evidence_tolerance=0.5)
              t1 = datetime.datetime.now()
            
-          #print "Runtime for multinest {}".format((t1-t0).total_seconds())
+          if not args.fullout:
+             try:
+               os.remove('{0}ev.dat'.format(out_fmt.format(obj)))
+             except:
+               pass
+             try:  
+               os.remove('{0}phys_live.points'.format(out_fmt.format(obj)))
+             except:
+               pass
+             try:
+               os.remove('{0}live.points'.format(out_fmt.format(obj)))
+             except:
+               pass    
+          
+	  #print "Runtime for multinest {}".format((t1-t0).total_seconds())
            
            
     elif args.mode == 'PLOT':
@@ -162,7 +177,6 @@ for ind in range(nobj):
                             
             a = pymultinest.Analyzer(n_params=ndim, outputfiles_basename=out_fmt.format(obj))
             values = a.get_equal_weighted_posterior()
-            
             stat = a.get_stats()
 
             lnz, dlnz = stat['global evidence'], stat['global evidence error']
