@@ -182,7 +182,7 @@ for ind in range(nobj):
             percs = np.transpose(np.percentile(values, [16,50,84], axis=0))
             
             for i in range(ndim):
-              print('Best fit for parameter {0}: {1:7.3f} + {2:6.3f} - {3:6.3f}'.format(parameters[i].ljust(10), meds[i], abs(percs[i,2]-meds[i]), abs(percs[i,0]-meds[i])))
+              print('Best fit for parameter {0}: {1:8.3f} + {2:7.3f} - {3:7.3f}'.format(parameters[i].ljust(10), meds[i], abs(percs[i,2]-meds[i]), abs(percs[i,0]-meds[i])))
             
             #Calculate SFR
             nsamp = 100
@@ -195,7 +195,7 @@ for ind in range(nobj):
             
             medlsfr  = np.percentile(sfr_samp, 50)
             perclsfr = np.percentile(sfr_samp, [16,50,84])
-            print('Best fit for parameter {0}: {1:7.3f} + {2:6.3f} - {3:6.3f} (DERIVED)'.format('lSFR'.ljust(10), medlsfr, abs(perclsfr[2]-medlsfr), abs(perclsfr[0]-medlsfr)))
+            print('Best fit for parameter {0}: {1:8.3f} + {2:7.3f} - {3:7.3f} (DERIVED)'.format('lSFR'.ljust(10), medlsfr, abs(perclsfr[2]-medlsfr), abs(perclsfr[0]-medlsfr)))
             
             #This returns the individual fluxes and the full spectrum 
             mflux, mphot = temp.reconstruct_phot(meds, ndim)
@@ -233,7 +233,12 @@ for ind in range(nobj):
                 ax1.plot(temp.red_wl/1e4, temp.dusty_phot_old*  10**tsamp[4]*temp.fscale*temp.red_wl*temp.lum_corr/temp.lsun, color='red' , alpha=0.15, lw=0.7, rasterized=False)
                 
                 #Make this array in Myr
-                age_array = np.arange(int(tsamp[1]*1000))/1000.
+                if temp.timeunit =='Myr':
+                   age_array = np.arange(int(tsamp[1]))
+                elif temp.timeunit =='Gyr':   
+                   age_array = np.arange(int(tsamp[1])*1000)/1000.
+                else:
+                   print('{Time unit {} not implemented yet.}'.format(temp.timeunit))
                 ax4.plot(age_array, sfh.expsfh(age_array,tsamp[0])*10**(tsamp[4]),color='black', alpha=0.1, lw=0.6, rasterized=False)
                                 
             
@@ -252,16 +257,16 @@ for ind in range(nobj):
             triangle.hist2d(values[:,1], values[:,0], ax=ax5)
             ax5.axvline(meds[1], color='firebrick', lw=1)
             ax5.axhline(meds[0], color='firebrick', lw=1)
-            ax5.set_xlabel(r'$\mathrm{Age~[Gyr]}$')
-            ax5.set_ylabel(r'$\tau$ [Gyr]')
+            ax5.set_xlabel(r'$\mathrm{{Age~[{}]}}$'.format(temp.timeunit))
+            ax5.set_ylabel(r'$\tau$ [{}]'.format(temp.timeunit))
             
             pl.savefig(plotdir+'id{0}_fit_summary.pdf'.format(obj), bbox_inches='tight')
             
             #Now deal with the fit file
             regstr = '{}'.format((str(obj)).ljust(7))
             for i in range(ndim): 
-               regstr += '{:7.3f} {:7.3f} {:7.3f} '.format(percs[i,0], percs[i,1], percs[i,2])
-            regstr += '{:7.3f} {:7.3f} {:7.3f} {:7.3f} {:7.3f}'.format(medlsfr, perclsfr[1], perclsfr[2], lnz, photo_chisq)
+               regstr += '{:8.3f} {:8.3f} {:8.3f} '.format(percs[i,0], percs[i,1], percs[i,2])
+            regstr += '{:8.3f} {:8.3f} {:8.3f} {:8.3f} {:8.3f}'.format(medlsfr, perclsfr[1], perclsfr[2], lnz, photo_chisq)
 
             
             if os.path.isfile(plotdir+fit_file):

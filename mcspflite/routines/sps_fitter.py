@@ -83,7 +83,7 @@ class sps_fitter:
         self.lum_corr = (self.Mpc_to_cm*dl)**2*4.*np.pi #4pi*dl^2 in cm^2
         
         #some derived parameters
-        self.gal_age = cosmo.age(self.redshift).value
+        self.gal_age = cosmo.age(self.redshift).value #In Gyr here, will be modified later if necessary
         self.dm = 5.*np.log10(dl*1e5) #DM brings source at 10pc
         self.fscale = 10**(-0.4*self.dm)
 
@@ -96,16 +96,7 @@ class sps_fitter:
         wdata = np.array(mfile[0].data, dtype=np.float)
         twl = self.airtovac(wdata)
         
-        #first pass through extensions to get grid parameters
-        ext_tau, ext_age, ext_metal = {}, {}, {}
-        for ii in range(1,num_ext):
-            age = mfile[ii].header['AGE'] / 1e3
-            tau   = mfile[ii].header['TAU'] / 1e3
-            ext_tau[ii]   = np.float(tau)
-            ext_age[ii]   = np.float(age)
-
-  
-        #get the wavelength informmation for the DH02 templates to stitch the two together
+        #get the wavelength information for the DH02 templates to stitch the two together
         dh_wl = np.loadtxt(modeldir+'spectra_DH02.dat', usecols=(0,))*1e4
         dh_nwl = len(dh_wl)
 
@@ -113,23 +104,29 @@ class sps_fitter:
         dh_long = (dh_wl > twl.max())
         self.wl = np.r_[twl, dh_wl[dh_long]]
         self.n_wl = len(self.wl)
+        
+        #Done with wavelength, now pass through extensions to get grid parameters
+        ext_tau, ext_age, ext_metal = [],[],[]
+        for ii in range(1,num_ext):
+            if ii==1:
+             self.timeunit = mfile[ii].header['AGEUNIT']
+            age   = mfile[ii].header['AGE'] 
+            tau   = mfile[ii].header['TAU'] 
+            ext_tau.append(np.float(tau))
+            ext_age.append(np.float(age))
 
-        self.grid_tau = np.unique(ext_tau.values())
-        self.grid_age = np.unique(ext_age.values())
+        #If model units are in Myr modify cosmo age accordingly
+        if self.timeunit == 'Myr':
+           self.gal_age *= 1000
+        
+        self.grid_tau = np.unique(ext_tau)
+        self.grid_age = np.unique(ext_age)
         
         self.n_tau = len(self.grid_tau)
         self.n_age = len(self.grid_age)
         
-        tau_id = dict(zip(self.grid_tau, range(self.n_tau)))
-        age_id = dict(zip(self.grid_age, range(self.n_age)))
-
-        ### for nebular emission ###
-        self.wl_lyman = 912.
-        self.ilyman = np.searchsorted(self.wl, self.wl_lyman, side='left') #wavelength just above Lyman limit
-        self.lycont_wls = np.r_[self.wl[:self.ilyman], np.array([self.wl_lyman])]
-        self.clyman_young = [None, None] #A list of two elements, first is for phot, the other for spec
-        self.clyman_old   = [None, None] #A list of two elements, first is for phot, the other for spec
-        self.fesc = fesc                 #lyman continuum escape fraction
+        #tau_id = dict(zip(self.grid_tau, range(self.n_tau)))
+        #age_id = dict(zip(self.grid_age, range(self.n_age)))
         
         #output grid
         self.mod_grid = np.zeros((self.n_tau, self.n_age, self.n_wl), dtype=np.float)
@@ -137,13 +134,15 @@ class sps_fitter:
         #grid where the fractional flux from young populations is stored
         self.fym_grid = np.zeros_like(self.mod_grid)
         
-        for ii in range(1,num_ext):
-            tau_idx = tau_id[ext_tau[ii]]
-            age_idx = age_id[ext_age[ii]]
+        for ii in range(1,num_ext):            
+            mdata  = np.array(mfile[ii].data,  dtype=np.float)
+            mmass  = mfile[ii].header['MSTAR']
+            mmetal = mfile[ii].header['METAL']
+            mage   = mfile[ii].header['AGE'] 
+            mtau   = mfile[ii].header['TAU'] 
             
-            mdata = np.array(mfile[ii].data,  dtype=np.float)
-            mmass = mfile[ii].header['MSTAR']
-            metal = mfile[ii].header['METAL']
+            tau_idx = np.where(mtau == self.grid_tau)[0]
+            age_idx = np.where(mage == self.grid_age)[0]
             
             self.mod_grid[tau_idx, age_idx, :] = np.interp(self.wl, twl, mdata[:, 0]/mmass, left=0, right=0)
             self.fym_grid[tau_idx, age_idx, :] = np.interp(self.wl, twl, mdata[:, 1], left=0, right=0)
@@ -163,29 +162,37 @@ class sps_fitter:
         #redshift the grid to be used in deriving predicted fluxes, also apply
         #flux correction to conserve energy
         self._redshift_spec()
+        
+        ### for nebular emission ###
+        self.wl_lyman = 912.
+        self.ilyman = np.searchsorted(self.wl, self.wl_lyman, side='left') #wavelength just above Lyman limit
+        self.lycont_wls = np.r_[self.wl[:self.ilyman], np.array([self.wl_lyman])]
+        self.clyman_young = [None, None] #A list of two elements, first is for phot, the other for spec
+        self.clyman_old   = [None, None] #A list of two elements, first is for phot, the other for spec
+        self.fesc = fesc                 #lyman continuum escape fraction
 
-        #set up for nebular emission lines
         self.emm_scales = np.zeros((7,10,128), dtype=np.float)
         self.emm_wls    = np.zeros(128,        dtype=np.float)
         self.emm_ages   = np.zeros(10,         dtype=np.float)
-        self.emm_ions    = np.zeros(7,         dtype=np.float)
+        self.emm_ions   = np.zeros(7,         dtype=np.float)
         icnt = 0
         rline = 0
         iline = 0
+        
         with open(modeldir+'nebular_Byler.lines','r') as file:
             for line in file:
                 if line[0] != '#':
-                    temp = string.strip(line).split(None)
+                    temp = (line.strip()).split(None)
                     if not iline: #Read wave line
-                        self.emm_wls[:] = np.array(map(float, temp))
+                        self.emm_wls[:] = np.array(temp, dtype=np.float)
                         iline = 1
                     else:
                         if rline: #Read line fluxes
-                            self.emm_scales[icnt%7,icnt/7,:] = np.array(map(float, temp))
+                            self.emm_scales[icnt%7,icnt//7,:] = np.array(temp, dtype=np.float)
                             icnt += 1
                         if len(temp) == 3 and float(temp[0]) == 0.0:
                             rline = 1
-                            self.emm_ages[icnt/7] = float(temp[1])/1e6
+                            self.emm_ages[icnt//7] = float(temp[1])/1e6
                             self.emm_ions[icnt%7]  = float(temp[2])
                         else:
                             rline = 0
