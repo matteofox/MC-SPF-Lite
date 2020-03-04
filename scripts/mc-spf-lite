@@ -92,10 +92,7 @@ for ind in range(nobj):
     print("{0}) Fitting obj {1} with z {2:5.4f} ".format(str(ind+1).rjust(4), obj, this_obj_z))
 
     this_obj_flux, this_obj_err, this_obj_bands, this_obj_islim = [], [], [], []
-
-    
-    #'H':'cfht_wircam_h',
-    
+   
     for col in colnames:
        #------- INPUT UNITS --------
        #Flux input must be in mJy for all the bands. A few lines 
@@ -196,7 +193,7 @@ for ind in range(nobj):
             percs = np.transpose(np.percentile(values, [16,50,84], axis=0))
             
             for i in range(ndim):
-              print('Best fit for parameter {0}: {1:8.3f} + {2:7.3f} - {3:7.3f}'.format(parameters[i].ljust(10), meds[i], abs(percs[i,2]-meds[i]), abs(percs[i,0]-meds[i])))
+              print('  Best fit for parameter {0}: {1:8.3f} + {2:7.3f} - {3:7.3f}'.format(parameters[i].ljust(10), meds[i], abs(percs[i,2]-meds[i]), abs(percs[i,0]-meds[i])))
             
             #Calculate SFR
             nsamp = 100
@@ -209,7 +206,7 @@ for ind in range(nobj):
             
             medlsfr  = np.percentile(sfr_samp, 50)
             perclsfr = np.percentile(sfr_samp, [16,50,84])
-            print('Best fit for parameter {0}: {1:8.3f} + {2:7.3f} - {3:7.3f} (DERIVED)'.format('lSFR'.ljust(10), medlsfr, abs(perclsfr[2]-medlsfr), abs(perclsfr[0]-medlsfr)))
+            print('  Best fit for parameter {0}: {1:8.3f} + {2:7.3f} - {3:7.3f} (DERIVED)'.format('lSFR'.ljust(10), medlsfr, abs(perclsfr[2]-medlsfr), abs(perclsfr[0]-medlsfr)))
             
             #This returns the individual fluxes and the full spectrum 
             mflux, mphot = temp.reconstruct_phot(meds, ndim)
@@ -232,7 +229,7 @@ for ind in range(nobj):
             photo_chisq = np.nansum(((oflux_lam-mflux)/oflux_err_lam)**2)
             photo_chisq /= len(this_obj_flux)
             
-            print('Reduced Chi square {0:6.2f}'.format(photo_chisq))
+            print('  Reduced Chi square {0:6.2f}'.format(photo_chisq))
 
             #Set number and index of random samples
             nsamp = 25
