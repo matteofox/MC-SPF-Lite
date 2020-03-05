@@ -216,11 +216,11 @@ for ind in range(nobj):
             
             col1 = fits.Column(name='wave_obs' , format='E', unit='Angstrom_vac', array=temp.red_wl)
             col2 = fits.Column(name='wave_rest', format='E', unit='Angstrom_vac', array=temp.red_wl/(1+this_obj_z))
-            col4 = fits.Column(name='f_lam_obs', format='E', unit='erg/cm2/s/A',      array=msed_flam)
+            col3 = fits.Column(name='f_lam_obs', format='E', unit='erg/cm2/s/A',      array=msed_flam)
             col4 = fits.Column(name='f_lam_rest',format='E', unit='erg/cm2/s/A',      array=msed_flam*(1+this_obj_z))
-            col3 = fits.Column(name='f_nu_obs',  format='E', unit='mJy',              array=msed_fnu)
+            col5 = fits.Column(name='f_nu_obs',  format='E', unit='mJy',              array=msed_fnu)
             
-            hdu = fits.BinTableHDU.from_columns([col1, col2, col3, col4])
+            hdu = fits.BinTableHDU.from_columns([col1, col2, col3, col4, col5])
             hdu.writeto(plotdir+'id{0}_best_sed.fits'.format(obj), overwrite=True)
 
             #Compute photometric chisquare
