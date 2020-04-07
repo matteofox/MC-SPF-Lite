@@ -142,9 +142,9 @@ for ind in range(nobj):
     
           with redir_stdout():
              t0 = datetime.datetime.now()
-             pymultinest.run(temp.lnlhood, temp._scale_cube, ndim, sampling_efficiency=0.5, resume=False, \
+             pymultinest.run(temp.lnlhood, temp._scale_cube, ndim, sampling_efficiency=0.4, resume=False, \
                    outputfiles_basename=out_fmt.format(obj), verbose=True, multimodal=False, \
-                   importance_nested_sampling=False, n_live_points=args.nlive, evidence_tolerance=0.5)
+                   importance_nested_sampling=False, n_live_points=int(args.nlive), evidence_tolerance=0.5)
              t1 = datetime.datetime.now()
            
           if not args.fullout:
@@ -262,7 +262,7 @@ for ind in range(nobj):
             ax1.set_xlabel(r'$\lambda~\mathrm{obs.}~[\mu \mathrm{m}]$')
             ax1.set_ylabel(r'$\lambda~L_\lambda [L_\odot]$')
             
-            ax4.set_xlabel(r'$\mathrm{Time~[Gyr]}$')
+            ax4.set_xlabel(r'$\mathrm{{Time~[{}]}}$'.format(temp.timeunit))
             ax4.set_ylabel(r'$SFR~\mathrm{[M_\odot~yr^{-1}]}$')
                     
             #Plot Age Tau covariance plot
