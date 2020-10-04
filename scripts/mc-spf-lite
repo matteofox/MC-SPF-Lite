@@ -276,6 +276,7 @@ for ind in range(nobj):
             
             #Now deal with the fit file
             regstr = '{}'.format((str(obj)).ljust(7))
+            regstr += '{:8.3f}'.format(this_obj_z)
             for i in range(ndim): 
                regstr += '{:8.3f} {:8.3f} {:8.3f} '.format(percs[i,0], percs[i,1], percs[i,2])
             regstr += '{:8.3f} {:8.3f} {:8.3f} {:8.3f} {:8.3f}'.format(medlsfr, perclsfr[1], perclsfr[2], lnz, photo_chisq)
@@ -294,7 +295,7 @@ for ind in range(nobj):
                   fitfile.writelines(sorted(lines))
                  
             else:
-               header = '#ID '
+               header = '#ID REDSHIFT '
                for i in range(ndim):
                  header += '{}_16 {}_50 {}_84 '.format(parameters[i].upper(), parameters[i].upper(),parameters[i].upper())
                header += 'LSFR_16 LSFR_50 LSFR_84 LNZ CHI2_PHOT'
@@ -303,3 +304,5 @@ for ind in range(nobj):
                  fitfile.write(header+'\n')
                  fitfile.write(regstr+'\n')
 
+        else:
+         print('File: {0}post_equal_weights.dat NOT FOUND'.format(out_fmt.format(obj)))
